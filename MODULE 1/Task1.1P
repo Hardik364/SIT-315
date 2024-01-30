@@ -1,0 +1,35 @@
+Student Name: Hardik Bajaj
+Student Id: 2210994786
+
+// Define the pin number for the PIR sensor
+const int pir = 4;
+
+void setup() {
+  // Set up the initial configuration, runs once when the Arduino starts
+  pinMode(4, INPUT);    // Set PIR sensor pin as INPUT
+  pinMode(12, OUTPUT);  // Set buzzer pin as OUTPUT
+  pinMode(8, OUTPUT);   // Set LED pin as OUTPUT
+  Serial.begin(9600);   // Start serial communication for debugging
+}
+
+void loop() {
+  // Main code that runs repeatedly
+
+  // Check if the PIR sensor detects motion
+  if (digitalRead(4) == HIGH) {
+    Serial.println("MOTION DETECTED");
+
+    // Turn on the buzzer and both LEDs
+    digitalWrite(12, HIGH);  // Turn on the buzzer
+    digitalWrite(8, HIGH);   // Turn on the LED
+  } else {
+    Serial.println("MOTION NOT DETECTED");
+
+    // Turn off the buzzer and both LEDs
+    digitalWrite(12, LOW);   // Turn off the buzzer
+    digitalWrite(8, LOW);    // Turn off the LED
+
+    // Introduce a delay to avoid continuous motion detection
+    delay(1000);
+  }
+}
