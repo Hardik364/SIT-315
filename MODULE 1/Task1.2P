@@ -1,0 +1,40 @@
+/* STUDENT NAME: HARDIK BAJAJ
+   STUDENT ID: 2210994786*/
+
+   
+const int pir = 2;
+const int led = 8;
+const int buzzer = 12;
+void setup() {
+  // put your setup code here, to run once:
+  pinMode(pir, INPUT);
+  pinMode(buzzer, OUTPUT);
+  pinMode(led, OUTPUT);
+  Serial.begin(9600);
+  
+    // Attach interrupt for PIR sensor pin
+  attachInterrupt(digitalPinToInterrupt(pir), detection, CHANGE);
+}
+
+void loop() 
+{
+  
+}
+
+void detection()
+{
+  // 
+  if(digitalRead(pir) == HIGH)
+  {
+    Serial.println("MOTION DECTECTED || LED ON || BUZZER ON");
+    digitalWrite(buzzer, HIGH);
+    digitalWrite(led, HIGH);
+  }
+  else
+  {
+    Serial.println("MOTION NOT DETECTED || LED OFF || BUZZER OFF");
+    digitalWrite(buzzer, LOW);
+    digitalWrite(led, LOW);
+  }
+}
+  
