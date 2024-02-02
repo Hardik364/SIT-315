@@ -1,0 +1,68 @@
+// STUDENT NAME: HARDIK BAJAJ
+// STUDENT ID: 2210994786
+
+
+const int pir_up = 2;
+const int pir_down = 3;
+
+const int led_up = 7;
+const int led_down = 8;
+
+const int buzzer = 12;
+void setup() 
+{
+  // put your setup code here, to run once:
+  pinMode(pir_up, INPUT);
+  pinMode(pir_down, INPUT);
+  
+  pinMode(led_up, OUTPUT);
+  pinMode(led_down, OUTPUT);
+
+  pinMode(buzzer, OUTPUT);
+  
+  Serial.begin(9600);
+  
+    // Attach interrupt for PIR sensor pin
+  attachInterrupt(digitalPinToInterrupt(pir_up), detection_up, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(pir_down), detection_down, CHANGE);
+}
+
+void loop() 
+{
+  //empty
+}
+
+void detection_up()
+{
+  // 
+  if(digitalRead(pir_up) == HIGH)
+  {
+    Serial.println("MOTION UP DECTECTED || LED ON || BUZZER ON");
+    digitalWrite(buzzer, HIGH);
+    digitalWrite(led_up, HIGH);
+  }
+  else
+  {
+    Serial.println("MOTION UP NOT DETECTED || LED OFF || BUZZER OFF");
+    digitalWrite(buzzer, LOW);
+    digitalWrite(led_up, LOW);
+  }
+}
+
+void detection_down()
+{
+  if(digitalRead(pir_down) == HIGH)
+  {
+    Serial.println("MOTION DOWN DETECTED || LED ON || BUZZER ON");
+    digitalWrite(buzzer, HIGH);
+    digitalWrite(led_down, HIGH);
+  }
+  else
+  {
+    Serial.println("MOTION DOWN NOT DETECTED || LED OFF || BUZZER OFF");
+    digitalWrite(buzzer, LOW);
+    digitalWrite(led_down, LOW);
+  }
+}
+
+  
