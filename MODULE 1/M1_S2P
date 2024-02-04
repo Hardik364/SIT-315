@@ -1,0 +1,50 @@
+/* STUDENT NAME: HARDIK BAJAJ
+   STUDENT ID: 2210994786
+*/
+
+const uint8_t BTN_PIN = 2; // Button pin connected to digital pin 2
+const uint8_t LED_PIN = 13; // LED pin connected to digital pin 13
+
+//ToDo Add Comment
+uint8_t buttonPrevState = LOW; // Variable to store the previous state of the button
+uint8_t ledState = LOW; // Variable to store the current state of the LED
+
+//ToDo Add Comment
+void setup()
+{
+  //ToDo Add Comment
+  pinMode(BTN_PIN, INPUT_PULLUP); // Set the button pin as input with internal pull-up resistor
+  //ToDo Add Comment
+  pinMode(LED_PIN, OUTPUT); // Set the LED pin as output
+  
+   attachInterrupt(digitalPinToInterrupt(BTN_PIN), buttonInterrupt, CHANGE);
+  //ToDo Add Comment
+  Serial.begin(9600); // Initialize serial communication
+}
+
+void loop()
+{
+ // empty
+}
+
+void buttonInterrupt()
+{
+    //ToDo Add Comment
+  uint8_t buttonState = digitalRead(BTN_PIN); // Read the current state of the button
+  
+  //ToDo Add Comment
+  Serial.print(buttonState); // Print the current state of the button
+  Serial.print(buttonPrevState); // Print the previous state of the button
+  Serial.print(ledState); // Print the current state of the LED
+  Serial.println(""); // Move to the next line in the serial monitor
+  
+  
+  //ToDo Add Comment
+  if(buttonState != buttonPrevState) 
+  {
+    ledState = !ledState; // Toggle the state of the LED
+    digitalWrite(LED_PIN, ledState); // Update the LED state
+  }
+  
+  buttonPrevState = buttonState; // Update the previous state of the button
+}
