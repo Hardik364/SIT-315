@@ -1,0 +1,82 @@
+// Define the pin numbers for PIR sensors, LEDs, buzzer, and timer LED
+const int pir_up = 2;
+const int pir_down = 3;
+const int led_up = 7;
+const int led_down = 8;
+const int buzzer = 12;
+const int timerLed = 13; // LED for timer interrupt
+
+// Flag to indicate timer interrupt
+volatile bool timerFlag = false; 
+
+void setup() {
+  // Set pin modes
+  pinMode(pir_up, INPUT);
+  pinMode(pir_down, INPUT);
+  pinMode(led_up, OUTPUT);
+  pinMode(led_down, OUTPUT);
+  pinMode(buzzer, OUTPUT);
+  pinMode(timerLed, OUTPUT);
+
+  // Begin serial communication
+  Serial.begin(9600);
+
+  // Enable Pin Change Interrupts for the specified pins
+  PCICR |= (1 << PCIE2); // Enable PCINT23-16 interrupt
+  PCMSK2 |= (1 << PCINT18) | (1 << PCINT19); // Enable interrupts for pir_up (PCINT18) and pir_down (PCINT19)
+
+  // Setup Timer1 for interrupt
+  cli(); // Disable interrupts
+  TCCR1A = 0; // Set entire TCCR1A register to 0
+  TCCR1B = 0; // Same for TCCR1B
+  // Set compare match register to desired timer count (e.g., for 1 second interrupt with 16MHz clock)
+  OCR1A = 15624; // 16MHz / (prescaler * desiredInterruptFrequency) - 1 (prescaler = 1024, desiredInterruptFrequency = 1Hz)
+  TCCR1B |= (1 << WGM12); // Turn on CTC mode
+  TCCR1B |= (1 << CS12) | (1 << CS10); // Set CS12 and CS10 bits for 1024 prescaler
+  TIMSK1 |= (1 << OCIE1A); // Enable timer compare interrupt
+  sei(); // Enable interrupts
+}
+
+void loop() {
+  // Check if timer interrupt flag is set
+  if (timerFlag) {
+    // Toggle the timer LED
+    digitalWrite(timerLed, !digitalRead(timerLed));
+    timerFlag = false; // Reset the flag
+  }
+  // Other tasks can be performed here
+}
+
+// Pin Change Interrupt Service Routine for pins PCINT23-16
+ISR(PCINT2_vect) {
+  // Check if motion is detected by PIR sensors
+  if (digitalRead(pir_up) == HIGH) {
+    // Motion up detected
+    Serial.println("MOTION UP DETECTED || LED ON || BUZZER ON");
+    digitalWrite(buzzer, HIGH);
+    digitalWrite(led_up, HIGH);
+  } else {
+    // No motion up detected
+    Serial.println("MOTION UP NOT DETECTED || LED OFF || BUZZER OFF");
+    digitalWrite(buzzer, LOW);
+    digitalWrite(led_up, LOW);
+  }
+
+  if (digitalRead(pir_down) == HIGH) {
+    // Motion down detected
+    Serial.println("MOTION DOWN DETECTED || LED ON || BUZZER ON");
+    digitalWrite(buzzer, HIGH);
+    digitalWrite(led_down, HIGH);
+  } else {
+    // No motion down detected
+    Serial.println("MOTION DOWN NOT DETECTED || LED OFF || BUZZER OFF");
+    digitalWrite(buzzer, LOW);
+    digitalWrite(led_down, LOW);
+  }
+}
+
+// Timer1 Compare Match A interrupt service routine
+ISR(TIMER1_COMPA_vect) {
+  // Timer interrupt occurred
+  timerFlag = true; // Set timer interrupt flag
+}
