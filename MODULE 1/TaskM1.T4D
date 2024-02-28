@@ -1,82 +1,95 @@
-// Define the pin numbers for PIR sensors, LEDs, buzzer, and timer LED
-const int pir_up = 2;
-const int pir_down = 3;
-const int led_up = 7;
-const int led_down = 8;
-const int buzzer = 12;
-const int timerLed = 13; // LED for timer interrupt
+#include <avr/io.h>
+#include <avr/interrupt.h>
 
-// Flag to indicate timer interrupt
-volatile bool timerFlag = false; 
+#define LED_PIN_1 5
+#define LED_PIN_2 6
+#define LED_PIN_3 7
+#define PIR_SENSOR_PIN_1 2
+#define PIR_SENSOR_PIN_2 3
+#define SOIL_MOISTURE_PIN 4
+#define TIMER_LED 8
+
+const uint16_t timer = 0; // counter +
+const uint16_t compare = 31250; // compare thresholds
 
 void setup() {
-  // Set pin modes
-  pinMode(pir_up, INPUT);
-  pinMode(pir_down, INPUT);
-  pinMode(led_up, OUTPUT);
-  pinMode(led_down, OUTPUT);
-  pinMode(buzzer, OUTPUT);
-  pinMode(timerLed, OUTPUT);
+  pinMode(LED_PIN_1, OUTPUT);
+  pinMode(LED_PIN_2, OUTPUT);
+  pinMode(LED_PIN_3, OUTPUT);
+  pinMode(TIMER_LED, OUTPUT);
 
-  // Begin serial communication
+  digitalWrite(LED_PIN_1, LOW);
+  digitalWrite(LED_PIN_2, LOW);
+  digitalWrite(LED_PIN_3, LOW);
+
+  // Enable Pin Change Interrupt for PIR sensors
+  PCICR |= (1 << PCIE2); // B00000100
+  PCMSK2 |= (1 << PCINT18) | (1 << PCINT19) | (1 << PCINT20);
+
+  // Enable Timer Interrupt
+  enableTimerInterrupt(0.5);
+
+  // Initialize Serial communication
   Serial.begin(9600);
-
-  // Enable Pin Change Interrupts for the specified pins
-  PCICR |= (1 << PCIE2); // Enable PCINT23-16 interrupt
-  PCMSK2 |= (1 << PCINT18) | (1 << PCINT19); // Enable interrupts for pir_up (PCINT18) and pir_down (PCINT19)
-
-  // Setup Timer1 for interrupt
-  cli(); // Disable interrupts
-  TCCR1A = 0; // Set entire TCCR1A register to 0
-  TCCR1B = 0; // Same for TCCR1B
-  // Set compare match register to desired timer count (e.g., for 1 second interrupt with 16MHz clock)
-  OCR1A = 15624; // 16MHz / (prescaler * desiredInterruptFrequency) - 1 (prescaler = 1024, desiredInterruptFrequency = 1Hz)
-  TCCR1B |= (1 << WGM12); // Turn on CTC mode
-  TCCR1B |= (1 << CS12) | (1 << CS10); // Set CS12 and CS10 bits for 1024 prescaler
-  TIMSK1 |= (1 << OCIE1A); // Enable timer compare interrupt
-  sei(); // Enable interrupts
+  Serial.println("Sensor Simulation Started");
 }
 
 void loop() {
-  // Check if timer interrupt flag is set
-  if (timerFlag) {
-    // Toggle the timer LED
-    digitalWrite(timerLed, !digitalRead(timerLed));
-    timerFlag = false; // Reset the flag
-  }
-  // Other tasks can be performed here
+
+
+  delay(1000);  // Add a delay to avoid overwhelming the Serial Monitor
 }
 
-// Pin Change Interrupt Service Routine for pins PCINT23-16
+void enableTimerInterrupt(double freq) {
+  
+  noInterrupts();
+  
+  uint16_t ocrValue = (uint16_t)(F_CPU / 1024 / freq - 1);
+  TCCR1A = 0;
+  TCCR1B = 0;
+  TCNT1 = 0;
+  
+  OCR1A = ocrValue;
+  TCCR1B  |= (1 << WGM12);
+  TCCR1B  |= (1 << CS12) | (1 << CS10);
+  TIMSK1 |= (1 << OCIE1A);
+  // Enable interrupts
+  interrupts();
+}
+
 ISR(PCINT2_vect) {
-  // Check if motion is detected by PIR sensors
-  if (digitalRead(pir_up) == HIGH) {
-    // Motion up detected
-    Serial.println("MOTION UP DETECTED || LED ON || BUZZER ON");
-    digitalWrite(buzzer, HIGH);
-    digitalWrite(led_up, HIGH);
+  // Pin Change Interrupt logic here
+  if (digitalRead(PIR_SENSOR_PIN_1) == HIGH) {
+    // PIR sensor 1 triggered
+    digitalWrite(LED_PIN_1, HIGH);  // Turn on LED 1
+    Serial.println("PIR Sensor 1 Activated");
   } else {
-    // No motion up detected
-    Serial.println("MOTION UP NOT DETECTED || LED OFF || BUZZER OFF");
-    digitalWrite(buzzer, LOW);
-    digitalWrite(led_up, LOW);
+    digitalWrite(LED_PIN_1, LOW);  // Turn off LED 1
   }
 
-  if (digitalRead(pir_down) == HIGH) {
-    // Motion down detected
-    Serial.println("MOTION DOWN DETECTED || LED ON || BUZZER ON");
-    digitalWrite(buzzer, HIGH);
-    digitalWrite(led_down, HIGH);
+  if (digitalRead(PIR_SENSOR_PIN_2) == HIGH) {
+    // PIR sensor 2 triggered
+    digitalWrite(LED_PIN_2, HIGH);  // Turn on LED 2
+    Serial.println("PIR Sensor 2 Activated");
   } else {
-    // No motion down detected
-    Serial.println("MOTION DOWN NOT DETECTED || LED OFF || BUZZER OFF");
-    digitalWrite(buzzer, LOW);
-    digitalWrite(led_down, LOW);
+    digitalWrite(LED_PIN_2, LOW);  // Turn off LED 2
   }
+   if (digitalRead(SOIL_MOISTURE_PIN) == HIGH) {
+    // PIR sensor 2 triggered
+    digitalWrite(LED_PIN_3, HIGH);  // Turn on LED 3
+    Serial.println("Tilt Sensor 3 High");
+  } else {
+    digitalWrite(LED_PIN_3, LOW);  // Turn off LED 3
+  }
+  digitalWrite(LED_PIN_3, digitalRead(SOIL_MOISTURE_PIN));
 }
 
-// Timer1 Compare Match A interrupt service routine
-ISR(TIMER1_COMPA_vect) {
-  // Timer interrupt occurred
-  timerFlag = true; // Set timer interrupt flag
+
+
+ISR(TIMER1_COMPA_vect){
+  digitalWrite(TIMER_LED, digitalRead(TIMER_LED) ^ 1);
 }
+
+
+
+
