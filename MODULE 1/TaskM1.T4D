@@ -7,27 +7,28 @@
 #define PIR_SENSOR_PIN_1 2
 #define PIR_SENSOR_PIN_2 3
 #define SOIL_MOISTURE_PIN 4
-#define TIMER_LED 8
+#define MOTOR_PIN 8
 
-const uint16_t timer = 0; // counter +
-const uint16_t compare = 31250; // compare thresholds
+volatile bool motorRunning = false; // Flag to indicate if motor is running
+volatile unsigned long motorStartTime = 0; // Time when motor started
 
 void setup() {
   pinMode(LED_PIN_1, OUTPUT);
   pinMode(LED_PIN_2, OUTPUT);
   pinMode(LED_PIN_3, OUTPUT);
-  pinMode(TIMER_LED, OUTPUT);
+  pinMode(MOTOR_PIN, OUTPUT);
 
   digitalWrite(LED_PIN_1, LOW);
   digitalWrite(LED_PIN_2, LOW);
   digitalWrite(LED_PIN_3, LOW);
+  digitalWrite(MOTOR_PIN, LOW);
 
   // Enable Pin Change Interrupt for PIR sensors
   PCICR |= (1 << PCIE2); // B00000100
   PCMSK2 |= (1 << PCINT18) | (1 << PCINT19) | (1 << PCINT20);
 
   // Enable Timer Interrupt
-  enableTimerInterrupt(0.5);
+  enableMotorInterrupt(500); // Motor runs every 500 ms
 
   // Initialize Serial communication
   Serial.begin(9600);
@@ -35,16 +36,12 @@ void setup() {
 }
 
 void loop() {
-
-
-  delay(1000);  // Add a delay to avoid overwhelming the Serial Monitor
+  // Your main loop code here
 }
 
-void enableTimerInterrupt(double freq) {
-  
+void enableMotorInterrupt(int milliseconds) {
   noInterrupts();
-  
-  uint16_t ocrValue = (uint16_t)(F_CPU / 1024 / freq - 1);
+  uint16_t ocrValue = (uint16_t)((F_CPU / 1024UL) * (milliseconds / 1000.0) - 1);
   TCCR1A = 0;
   TCCR1B = 0;
   TCNT1 = 0;
@@ -53,43 +50,43 @@ void enableTimerInterrupt(double freq) {
   TCCR1B  |= (1 << WGM12);
   TCCR1B  |= (1 << CS12) | (1 << CS10);
   TIMSK1 |= (1 << OCIE1A);
-  // Enable interrupts
   interrupts();
 }
 
+
 ISR(PCINT2_vect) {
-  // Pin Change Interrupt logic here
   if (digitalRead(PIR_SENSOR_PIN_1) == HIGH) {
-    // PIR sensor 1 triggered
-    digitalWrite(LED_PIN_1, HIGH);  // Turn on LED 1
+    digitalWrite(LED_PIN_1, HIGH);
     Serial.println("PIR Sensor 1 Activated");
   } else {
-    digitalWrite(LED_PIN_1, LOW);  // Turn off LED 1
+    digitalWrite(LED_PIN_1, LOW);
   }
 
   if (digitalRead(PIR_SENSOR_PIN_2) == HIGH) {
-    // PIR sensor 2 triggered
-    digitalWrite(LED_PIN_2, HIGH);  // Turn on LED 2
+    digitalWrite(LED_PIN_2, HIGH);
     Serial.println("PIR Sensor 2 Activated");
   } else {
-    digitalWrite(LED_PIN_2, LOW);  // Turn off LED 2
+    digitalWrite(LED_PIN_2, LOW);  
   }
-   if (digitalRead(SOIL_MOISTURE_PIN) == HIGH) {
-    // PIR sensor 2 triggered
-    digitalWrite(LED_PIN_3, HIGH);  // Turn on LED 3
+  
+  if (digitalRead(SOIL_MOISTURE_PIN) == HIGH) {
+    digitalWrite(LED_PIN_3, HIGH);
     Serial.println("Tilt Sensor 3 High");
   } else {
-    digitalWrite(LED_PIN_3, LOW);  // Turn off LED 3
+    digitalWrite(LED_PIN_3, LOW);
   }
-  digitalWrite(LED_PIN_3, digitalRead(SOIL_MOISTURE_PIN));
 }
 
-
-
-ISR(TIMER1_COMPA_vect){
-  digitalWrite(TIMER_LED, digitalRead(TIMER_LED) ^ 1);
+ISR(TIMER1_COMPA_vect) {
+  if (!motorRunning) {
+    digitalWrite(MOTOR_PIN, HIGH); // Turn on motor
+    motorRunning = true;
+    motorStartTime = millis();
+  } else {
+    unsigned long elapsedTime = millis() - motorStartTime;
+    if (elapsedTime >= 5000) { // Motor runs for 5 seconds
+      digitalWrite(MOTOR_PIN, LOW); // Turn off motor
+      motorRunning = false;
+    }
+  }
 }
-
-
-
-
